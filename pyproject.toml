@@ -1,0 +1,16 @@
+[project]
+name = "waifu-backend-fastapi"
+version = "0.3.0"
+description = "FastAPI-based backend of the Waifu Material project"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.100.0",
+    "hypercorn==0.14.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ruff>=0.14.1",
+]
