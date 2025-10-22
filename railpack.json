@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "steps": {
+    "install": {
+      "commands": ["uv init"]
+    },
+    "build": {
+      "commands": ["uv sync"]
+    }
+  },
+  "deploy": {
+    "startCommand": "uv run hypercorn main:app --reload"
+  }
+}
