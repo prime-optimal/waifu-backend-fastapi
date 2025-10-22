@@ -1,6 +1,11 @@
-from fastapi import FastAPI
+import logfire
+from src.app import create_app
 
-app = FastAPI()
+logfire.configure()
+logfire.info('Hello, {name}!', name='world')
+
+app = create_app()
+
 
 @app.get("/")
 async def root():

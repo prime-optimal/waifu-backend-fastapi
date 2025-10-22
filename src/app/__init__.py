@@ -1,0 +1,5 @@
+"""Application package exposing the FastAPI application factory."""
+
+from .factory import create_app
+
+__all__ = ["create_app"]

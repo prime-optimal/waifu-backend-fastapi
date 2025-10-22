@@ -1,0 +1,1 @@
+/Users/ryan/working/posecompose/openspec/project.md
