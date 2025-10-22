@@ -1,2 +1,12 @@
+# Add all dependencies from pyproject.toml to requirements.txt
 fastapi==0.100.0
 hypercorn==0.14.4
+pydantic>=2.0.0
+logfire
+httpx
+sqlalchemy[asyncio]
+asyncpg
+aiosqlite
+pydantic-settings
+apscheduler
+python-multipart
