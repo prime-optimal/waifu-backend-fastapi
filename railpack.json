@@ -27,18 +27,9 @@
           "/app/.venv"
         ],
         "step": "build"
-      },
-      {
-        "exclude": [
-          ".venv"
-        ],
-        "include": [
-          "."
-        ],
-        "step": "build"
       }
     ],
-    "startCommand": "python main.py",
+    "startCommand": "uv run hypercorn main:app --reload",
     "variables": {
       "PIP_DEFAULT_TIMEOUT": "100",
       "PIP_DISABLE_PIP_VERSION_CHECK": "1",
@@ -51,7 +42,7 @@
   "steps": {
     "packages:mise": {
       "assets": {
-        "mise.toml": "[tools]\n  [tools.python]\n    version = \"3.13.9\"\n  [tools.uv]\n    version = \"0.9.5\"\n"
+        "mise.toml": "[tools]\n  [tools.python]\n    version = \"3.13.9\"\n  [tools.uv]\n    version = \"0.5.9\"\n"
       },
       "commands": [
         {
@@ -67,7 +58,7 @@
           "path": "/etc/mise/config.toml"
         },
         {
-          "cmd": "sh -c 'mise trust -a \u0026\u0026 mise install'",
+          "cmd": "sh -c 'mise trust -a && mise install'",
           "customName": "install mise packages: python, uv"
         }
       ],
@@ -139,7 +130,10 @@
         },
         {
           "include": [
-            "."
+            "src/",
+            "main.py",
+            "pyproject.toml",
+            "uv.lock"
           ],
           "local": true
         }

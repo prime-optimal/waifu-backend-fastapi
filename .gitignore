@@ -20,3 +20,5 @@ railpack2.json
 railway.json
 requirements.txt
 .dockerignore
+logs
+railpack.bak
