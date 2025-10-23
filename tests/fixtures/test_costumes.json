@@ -1,0 +1,31 @@
+{
+  "test_costumes": [
+    {
+      "id": "bowsette",
+      "name": "Bowsette Costume",
+      "prompt": "The user uploaded a personal photo (image 1).\nApply the selected costume from the following reference images to create a realistic virtual try-on result.\nKeep the user's facial expression, and skin tone.\n\nContext: \nBehold Bowsette, the naughtiest of the Koopa tribe and Bowser's dangerously hot cousin. \nHer costume is a dramatic and provocative, two-piece ensemble that blends gothic \nelegance with a rebellious, dominant edge.\n\nThe Bodice: The top is a structured, form-fitting black top with fetish-vibes and a powerful aesthetic.\nThe blue jewel sticks out as the only color on her otherwise all-black outfit.\n\nThe Skirt: The bottom is a high-waisted, short skirt composed of multiple layers of black fabric. \nThese layers are gathered and pleated, creating a voluminous, ruffled silhouette that contrasts \nsharply with the tight bodice. \n\nThe skirt is notably short, ending high on the thighs, and its fullness adds a playful, \ntheatrical element to the otherwise severe top.\n\nShe wears sheer black stockings, a spiked choker, and a menacing horned crown and long blonde hair. \nHer powerful stance and smoldering gaze exude dominance and playful rebellion, \nmaking her the ultimate bad girl of the Mushroom Kingdom.\n\nPhotorealistic, dramatic lighting.  Spotlights shining on her from both sides.\nThe image should emphasize craftsmanship, fabric details, and authentic video game character costuming.\nBackground: the moat of a castle with lava in the background.  Slightly muted contrast to emphasize \nthe detail on the corset.  \nAvoid: No sunglasses, no frowns, no words on clothing.\nStyle: hyper-detailed, photorealistic, cinematic lighting, sharp focus, 8K.",
+      "reference_images": [
+        "bowsette-blurred.png",
+        "bowsette-crown.jpg", 
+        "bowsette-horns.jpg",
+        "bowsette-wig.jpg",
+        "bowsette-front.jpg"
+      ],
+      "affiliate_link": "https://example.com/buy-bowsette"
+    }
+  ],
+  "ai_provider_config": {
+    "base_url": "https://nano-gpt.com/v1/images/generations",
+    "models": {
+      "standard": "seedream-v4",
+      "premium": "google:4@1", 
+      "fast": "qwen-image"
+    },
+    "model_limits": {
+      "seedream-v4": 10,
+      "google:4@1": 4,
+      "qwen-image": 4
+    },
+    "timeout": 30.0
+  }
+}
