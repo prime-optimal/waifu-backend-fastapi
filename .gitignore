@@ -10,3 +10,12 @@ DS_Store
 *.sql
 
 __pycache__
+railway.json
+railway.json
+requirements.txt
+
+# Docs
+.factory/
+docs/
+openspec/
+logs

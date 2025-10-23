@@ -1,0 +1,22 @@
+# .dockerignore (also works for railpack)
+.git
+.gitignore
+.dockerignore
+README.md
+docs/
+logs/
+*.log
+.env
+.env.*
+.ruff_cache/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+.factory/
+openspec/
+docs/
