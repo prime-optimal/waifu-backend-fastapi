@@ -29,7 +29,7 @@
         "step": "build"
       }
     ],
-    "startCommand": "uv run hypercorn main:app --reload",
+    "startCommand": "hypercorn main:app --bind [::]:8080",
     "variables": {
       "PIP_DEFAULT_TIMEOUT": "100",
       "PIP_DISABLE_PIP_VERSION_CHECK": "1",
@@ -42,7 +42,7 @@
   "steps": {
     "packages:mise": {
       "assets": {
-        "mise.toml": "[tools]\n  [tools.python]\n    version = \"3.13.9\"\n  [tools.uv]\n    version = \"0.5.9\"\n"
+        "mise.toml": "[tools]\n  [tools.python]\n    version = \"3.13.9\"\n  [tools.uv]\n    version = \"0.9.5\"\n"
       },
       "commands": [
         {
@@ -137,9 +137,6 @@
           ],
           "local": true
         }
-      ],
-      "secrets": [
-        "LOGFIRE_TOKEN"
       ]
     }
   }
