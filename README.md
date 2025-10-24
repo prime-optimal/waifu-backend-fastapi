@@ -14,10 +14,10 @@ This service powers the virtual try-on experience. It orchestrates user uploads,
   - [Key Features](#key-features)
   - [Environment Configuration](#environment-configuration)
   - [Testing](#testing)
-    - [Unit \& Integration Tests (Mocked)](#unit--integration-tests-mocked)
+    - [Unit & Integration Tests (Mocked)](#unit--integration-tests-mocked)
     - [External AI Tests (Live NanoGPT API)](#external-ai-tests-live-nanogpt-api)
   - [AI Provider Notes](#ai-provider-notes)
-  - [Debugging \& Logs](#debugging--logs)
+  - [Debugging & Logs](#debugging--logs)
   - [Roadmap](#roadmap)
   - [Reference Docs](#reference-docs)
 
@@ -138,6 +138,7 @@ For detailed guidance, see [`docs/features/multi-model-try-on.md`](docs/features
 
 - [`docs/features/multi-model-try-on.md`](docs/features/multi-model-try-on.md)
 - [`docs/testing/external-ai.md`](docs/testing/external-ai.md)
+- [`docs/release-checklist.md`](docs/release-checklist.md)
 - [`docs/nano-gpt/image-generation.md`](docs/nano-gpt/image-generation.md)
 - [`docs/multi-model-implementation-plan.md`](docs/multi-model-implementation-plan.md)
 
