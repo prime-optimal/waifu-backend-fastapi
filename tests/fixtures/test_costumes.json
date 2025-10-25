@@ -19,12 +19,12 @@
     "models": {
       "standard": "seedream-v4",
       "premium": "google:4@1", 
-      "fast": "qwen-image"
+      "fast": "gpt-image-1-mini"
     },
     "model_limits": {
       "seedream-v4": 10,
       "google:4@1": 4,
-      "qwen-image": 4
+      "gpt-image-1-mini": 4
     },
     "timeout": 30.0
   }

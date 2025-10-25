@@ -1,6 +1,6 @@
 # Multi-Model Try-On Feature Implementation Plan
 
-**Last verified:** 2025-10-24
+**Last verified:** 2025-10-24 (Evening)
 
 > This plan captures the intended end-to-end rollout for the multi-model try-on effort. Only the client-level foundation has landed so far. Refer to [docs/features/multi-model-try-on.md](features/multi-model-try-on.md) for the current live capabilities.
 
@@ -11,19 +11,19 @@ Deliver a single workflow that can produce multiple costume renders from one use
 
 ## Phase 1 – Foundation
 
-### Task 1: AI Provider Client ▶️ **Mostly Complete (13/16 items done)**
+### Task 1: AI Provider Client ✅ **Complete (15/16 items)**
 **File:** `src/clients/ai_provider.py`
 
 - ✅ Async client aligned with NanoGPT API (model selection, references array, auth headers)
 - ✅ Model-specific timeouts and optional parallel helper (`generate_try_on_parallel`)
 - ✅ Debug gating via `AI_PROVIDER_DEBUG` and `AI_DEBUG_DIR`
-- ✅ **12 dedicated unit tests** in `tests/clients/test_ai_provider.py` with mock transports
-- ❌ Structured logging via `observability.get_logger` (still using standard `logging`)
-- ❌ ServiceError-only propagation (broad `except Exception` remains, returns status="failed")
+- ✅ Structured logging via `observability.get_logger("ai_provider")`
+- ✅ 12 dedicated unit tests in `tests/clients/test_ai_provider.py` with mock transports
+- ✅ Download safeguards (10 MB cap, per-model read timeout budgets)
+- ❌ Retry/backoff strategy for transient provider failures
 
 **Next actions**
-- Swap logger wiring to `get_logger("ai_provider")` and emit structured fields
-- Revisit error handling to bubble unexpected exceptions (ServiceError/ValueError)
+- Evaluate retry/backoff options for provider hiccups (exponential backoff or Polly-style retries)
 
 ### Task 2: Database Schema (ModelResult table) ⏳ **Pending**
 **Files:** `src/db/models.py`, `src/db/repositories/workflows.py`, migration scripts
@@ -35,9 +35,9 @@ Deliver a single workflow that can produce multiple costume renders from one use
 ### Task 3: Service Orchestration ⏳ **Pending**
 **File (planned):** `src/services/try_on.py` or extension to `WorkflowService`
 
-- Coordinate multi-model execution (sequential or parallel)
+- Coordinate multi-model execution (sequential or parallel) and respect timeouts per model
 - Handle partial failures and aggregate status
-- Invoke storage uploads for successful outputs
+- Invoke storage uploads for successful outputs using the Backblaze naming convention ([docs/storage/b2-object-naming.md](storage/b2-object-naming.md))
 - Emit structured logs/metrics for each invocation
 
 ### Task 4: API Layer ⏳ **Pending**
@@ -60,61 +60,54 @@ Deliver a single workflow that can produce multiple costume renders from one use
 - Provide helpers to parse JSON/CSV environment overrides
 
 ### Task 6: Test Fixtures ⏳ **Pending**
-**Files:** `tests/fixtures/test_costumes.json`, `tests/conftest.py`
+**Files:** `tests/fixtures/`
 
-- Prepare lightweight costume prompts/references
-- Mock external HTTP calls where possible to avoid hitting real APIs
+- Extend costume and user-image fixtures to cover new models (e.g., `gpt-image-1-mini`)
+- Add local storage stubs for B2 upload paths to ensure naming convention consistency
+- Provide deterministic prompts for regression comparisons
 
-### Task 7: Automated Tests ⏳ **Pending**
-**Files (planned):**
-- `tests/services/test_try_on.py`
-- `tests/api/test_try_on.py`
-- `tests/clients/test_ai_provider.py` (new cases)
+### Task 7: External Test Harness ⏳ **Pending**
+**Files:** `tests/api/test_workflow_integration.py`, `tests/conftest.py`
 
-**Scenarios**
-- Happy path for single and multi-model runs
-- Partial failure handling
-- Storage upload coordination
-- Validation errors for unsupported models or missing inputs
+- Register a pytest option (`--run-external`) to gate live tests
+- Capture per-model timing metrics in test logs via structured logging
+- Create optional scripts to diff generated images across runs
 
 ---
 
-## Phase 3 – Integration & Operations
+## Phase 3 – Orchestration & Observability
 
-### Task 8: Dependency Wiring ⏳ **Pending**
-**Files:** `src/app/dependencies.py`, `src/app/factory.py`
+### Task 8: Workflow Integration ⏳ **Pending**
+**File:** `src/services/workflow.py` (or new `TryOnService`)
 
-- Register TryOn service and routers
-- Ensure dependency overrides exist for tests
+- Invoke multi-model generation, orchestrate storage uploads, persist results
+- Store per-model metadata (status, asset URL, timing)
+- Upload debug logs to B2 prefixed under `workflows/{workflow_id}/logs/`
 
-### Task 9: Storage Coordination ⏳ **Pending**
-**Files:** `src/storage/b2.py`, environment configuration
+### Task 9: API Response ⏳ **Pending**
+**Files:** `src/api/routes/workflows.py` (or new try-on route)
 
-- Confirm upload helpers support multi-file batches
-- Add clean-up strategy for failed runs
+- Return gallery payload including seeded results, failure reasons, and signed URLs
+- Add pagination or filtering if multiple iterations are supported
 
-### Task 10: Observability & Runbooks ⏳ **Pending**
-- Switch AI client logging to shared observability logger
-- Capture latency/error metrics per model
-- Document live-test procedures in ops runbooks
+### Task 10: Observability & Metrics ⏳ **Pending**
+**Files:** `src/observability/`, dashboards
 
----
-
-## Testing Strategy (Current Reality)
-
-| Scope                    | Location                                   | Status        | Notes                                                                 |
-|--------------------------|--------------------------------------------|---------------|-----------------------------------------------------------------------|
-| AI client unit tests     | `tests/clients/test_ai_provider.py`        | ✅ 12 tests    | Covers URLs, base64, parallel execution, error paths                  |
-| Workflow integration     | `tests/api/test_workflow_integration.py`   | ✅ Existing   | Uses stubs; external API calls guarded by `@pytest.mark.external`     |
-| Live provider tests      | `tests/api/test_workflow_integration.py`   | ✅ Available  | Run with `uv run pytest -m external`; skipped without credentials     |
+- Push structured logs to Logfire / Railway viewer (already instrumented at client level)
+- Surface per-model timing, success rates, and error distribution
+- Add alerting thresholds for timeouts or repeated provider failures
 
 ---
 
-## Success Criteria
-- Workflow/API can request multiple models and persist each result
-- Partial failures surface clearly in API responses and stored data
-- Images and logs land outside the repository (B2 + debug dirs)
-- Tests cover orchestration, error paths, and configuration edge cases
-- Documentation reflects implemented behavior at each milestone
+## Completion Criteria
 
-Once these checkpoints are complete, the feature can progress to rollout planning (feature flagging, UX updates, and operational readiness).
+The feature is complete when:
+
+1. Workflow service orchestrates multiple models and persists each result.
+2. API exposes a gallery response per workflow run.
+3. B2 storage receives all assets/logs using the documented naming scheme.
+4. Structured logging captures model metrics end-to-end (client → service → API).
+5. Automated tests cover happy paths, error handling, and storage interactions.
+6. Documentation (feature, testing, release notes) reflects the final behavior with up-to-date "Last verified" stamps.
+
+Track progress in the accompanying progress and summary documents; update this plan as milestones are achieved.

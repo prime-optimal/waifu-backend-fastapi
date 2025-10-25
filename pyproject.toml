@@ -30,5 +30,6 @@ dev = [
 [tool.pytest.ini_options]
 markers = [
     "asyncio: mark async tests",
+    "external: mark tests that require external API access",
 ]
 asyncio_mode = "auto"

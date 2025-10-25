@@ -43,17 +43,15 @@ Health check endpoints:
 ## Key Features
 
 - **FastAPI + Hypercorn** runtime with dependency-injected services.
-- **AI Provider Client** for NanoGPT models (`seedream-v4`, `google:4@1`, `qwen-image`).
+- **AI Provider Client** for NanoGPT models (`seedream-v4`, `google:4@1`, `qwen-image`, `gpt-image-1-mini`).
   - Client-level parallel helper for issuing multiple model requests concurrently.
   - Model-specific read timeouts with shared connect/write budgets.
   - Debug artifacts gated behind `AI_PROVIDER_DEBUG` and saved outside the repo.
-- **Catalog & Workflow Services** with B2 storage integration.
+  - Structured logging via the shared observability logger (`get_logger("ai_provider")`).
+- **Catalog & Workflow Services** with Backblaze B2 storage integration.
 - **Testing Strategy**
   - Unit tests with `pytest` and `httpx.MockTransport`.
   - Opt-in external tests marked with `@pytest.mark.external`.
-- **Observability**
-  - Standard logging via `logging.getLogger("waifu.ai_provider")`.
-  - Plans to migrate to the shared observability logger for structured output.
 
 ---
 
@@ -108,7 +106,7 @@ AI_PROVIDER_API_KEY=... AI_PROVIDER_URL=... uv run pytest -m external -vv
 ## AI Provider Notes
 
 - `seedream-v4` and `google:4@1` accept costume URLs directly.
-- `qwen-image` requires base64-encoded image inputs and can take 2–3 minutes.
+- `qwen-image` is supported but slow (2–3 minutes). `gpt-image-1-mini` is a faster alternative.
 - The client enforces a 10 MB cap on downloaded reference assets.
 - Parallel execution is currently limited to client-level helpers; workflow/API orchestration is planned.
 
@@ -118,7 +116,7 @@ For detailed guidance, see [`docs/features/multi-model-try-on.md`](docs/features
 
 ## Debugging & Logs
 
-- Runtime logs available via `logging.getLogger("waifu.ai_provider")`.
+- Runtime logs flow through `src/observability/logger.get_logger("ai_provider")`, emitting structured JSON fields (model, status, latency, payload size).
 - When `AI_PROVIDER_DEBUG=1`, detailed JSON traces are written to `AI_DEBUG_DIR` (defaults to system temp).
 - Generated images from external tests land in `.artifacts/ai/`; clean them before committing.
 
@@ -128,7 +126,6 @@ For detailed guidance, see [`docs/features/multi-model-try-on.md`](docs/features
 
 - Integrate multi-model orchestration into `WorkflowService`.
 - Persist per-model results with a new `ModelResult` table.
-- Adopt the shared observability logger for structured metrics.
 - Add pytest hook for `--run-external` convenience flag.
 - Expand automated coverage for parallel execution and error paths.
 
@@ -139,6 +136,7 @@ For detailed guidance, see [`docs/features/multi-model-try-on.md`](docs/features
 - [`docs/features/multi-model-try-on.md`](docs/features/multi-model-try-on.md)
 - [`docs/testing/external-ai.md`](docs/testing/external-ai.md)
 - [`docs/release-checklist.md`](docs/release-checklist.md)
+- [`docs/storage/b2-object-naming.md`](docs/storage/b2-object-naming.md)
 - [`docs/nano-gpt/image-generation.md`](docs/nano-gpt/image-generation.md)
 - [`docs/multi-model-implementation-plan.md`](docs/multi-model-implementation-plan.md)
 

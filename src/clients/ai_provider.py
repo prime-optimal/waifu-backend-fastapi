@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
 import os
 import tempfile
 import time
@@ -15,10 +14,12 @@ from typing import Any, AsyncIterator, Sequence
 
 import httpx
 
+from src.observability.logger import get_logger
+
 from .base import BaseServiceClient, ServiceError
 from .utils import generate_ai_filename, image_to_data_url
 
-logger = logging.getLogger("waifu.ai_provider")
+logger = get_logger("ai_provider")
 
 DEBUG_DIR = Path(os.getenv("AI_DEBUG_DIR", tempfile.gettempdir()))
 DEBUG_ENABLED = os.getenv("AI_PROVIDER_DEBUG") == "1"
@@ -192,13 +193,12 @@ class AIProviderClient(BaseServiceClient):
             self._emit_debug(debug_info)
 
             logger.info(
-                "Generated try-on",
-                extra={
-                    "model_name": model_name,
-                    "status": status,
-                    "processing_time_ms": processing_time_ms,
-                    "payload_size_kb": round(payload_size_kb, 2),
-                },
+                "generated_try_on",
+                model=model_name,
+                status=status,
+                processing_time_ms=processing_time_ms,
+                payload_size_kb=round(payload_size_kb, 2),
+                generated_filename=generated_filename,
             )
 
             return AIProviderResult(
@@ -221,8 +221,10 @@ class AIProviderClient(BaseServiceClient):
             )
             self._emit_debug(debug_info)
             logger.error(
-                "AI provider service error",
-                extra={"model_name": model_name, "error": str(exc)},
+                "ai_provider_service_error",
+                model=model_name,
+                error=str(exc),
+                processing_time_ms=processing_time_ms,
             )
             return AIProviderResult(
                 model_name=model_name,
@@ -242,7 +244,9 @@ class AIProviderClient(BaseServiceClient):
             )
             self._emit_debug(debug_info)
             logger.exception(
-                "AI provider generation failed", extra={"model_name": model_name}
+                "ai_provider_generation_failed",
+                model=model_name,
+                processing_time_ms=processing_time_ms,
             )
             return AIProviderResult(
                 model_name=model_name,
@@ -293,12 +297,12 @@ class AIProviderClient(BaseServiceClient):
         """Describe the user image input for debugging."""
         if url:
             return {"type": "url", "value": url}
-        elif base64:
-            return {"type": "base64", "value": f"{base64[:50]}..."}
-        elif path:
+        if base64:
+            preview = f"{base64[:50]}..." if len(base64) > 50 else base64
+            return {"type": "base64", "value": preview}
+        if path:
             return {"type": "path", "value": path}
-        else:
-            return {"type": "none", "value": None}
+        return {"type": "none", "value": None}
 
     def _describe_costume_inputs(
         self,
@@ -307,10 +311,12 @@ class AIProviderClient(BaseServiceClient):
         paths: Sequence[str] | None = None,
     ) -> dict[str, Any]:
         """Describe costume reference inputs for debugging."""
+        url_count = len(urls) if urls else 0
+        path_count = len(paths) if paths else 0
         return {
-            "url_count": len(urls) if urls else 0,
-            "path_count": len(paths) if paths else 0,
-            "total_count": (len(urls) if urls else 0) + (len(paths) if paths else 0),
+            "url_count": url_count,
+            "path_count": path_count,
+            "total_count": url_count + path_count,
         }
 
     async def _build_references(
@@ -324,17 +330,14 @@ class AIProviderClient(BaseServiceClient):
         costume_reference_paths: Sequence[str] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         """Build references array for the AI provider API."""
-        # Add user image reference
         if user_image_url:
             yield {"role": "user", "url": user_image_url}
         elif user_image_base64:
             yield {"role": "user", "base64": user_image_base64}
         elif user_image_path:
-            # Convert local path to data URL
             data_url = image_to_data_url(user_image_path)
             yield {"role": "user", "base64": data_url.split(",", 1)[1]}
 
-        # Add costume reference images
         if costume_reference_urls:
             for url in costume_reference_urls:
                 yield {"role": "costume", "url": url}
@@ -346,11 +349,14 @@ class AIProviderClient(BaseServiceClient):
 
     def _emit_debug(self, debug_info: dict[str, Any]) -> None:
         """Emit debug information if debugging is enabled."""
-        if DEBUG_ENABLED:
-            debug_file = (
-                DEBUG_DIR
-                / f"ai_provider_debug_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            )
-            with open(debug_file, "w") as f:
-                json.dump(debug_info, f, indent=2, default=str)
-            logger.debug(f"Debug info written to {debug_file}")
+        if not DEBUG_ENABLED:
+            return
+
+        debug_file = (
+            DEBUG_DIR
+            / f"ai_provider_debug_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        DEBUG_DIR.mkdir(parents=True, exist_ok=True)
+        with open(debug_file, "w") as f:
+            json.dump(debug_info, f, indent=2, default=str)
+        logger.debug("ai_provider_debug_written", debug_file=str(debug_file))

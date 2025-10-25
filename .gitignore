@@ -25,3 +25,8 @@ railpack.bak
 .github/workflows/main.yml
 opencode
 docs/.opencode
+railway.toml
+
+# Testing
+.artifacts/
+generated_images/

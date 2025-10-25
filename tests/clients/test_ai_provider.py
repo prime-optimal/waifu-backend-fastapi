@@ -10,6 +10,7 @@ import pytest
 from pathlib import Path
 
 from src.clients.ai_provider import AIProviderClient, AIProviderResult
+from src.clients.utils import image_to_data_url
 
 
 @pytest.fixture
@@ -198,7 +199,7 @@ async def test_generate_try_on_with_base64(mock_client, test_costumes):
     )
 
     result = await client.generate_try_on(
-        model_name="qwen-image",
+        model_name="gpt-image-1-mini",
         user_image_base64="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ...",
         costume_reference_urls=[
             "https://example.com/costume1.jpg",
@@ -208,7 +209,7 @@ async def test_generate_try_on_with_base64(mock_client, test_costumes):
         seed=1003,
     )
 
-    assert result.model_name == "qwen-image"
+    assert result.model_name == "gpt-image-1-mini"
     assert result.status == "success"
     assert result.asset_url.startswith("data:image/png;base64,")
     await client.close()
@@ -300,7 +301,7 @@ async def test_generate_try_on_parallel_success(
         # Verify request format for each call
         assert request.url.path in ["/", "/v1/images/generations/"]
         body = json.loads(request.content)
-        assert body["model"] in ["seedream-v4", "google:4@1", "qwen-image"]
+        assert body["model"] in ["seedream-v4", "google:4@1", "gpt-image-1-mini"]
 
         # Validate prompt content
         assert "bowsette" in body["prompt"].lower(), (
@@ -321,7 +322,7 @@ async def test_generate_try_on_parallel_success(
     )
 
     results = await client.generate_try_on_parallel(
-        model_names=["seedream-v4", "google:4@1", "qwen-image"],
+        model_names=["seedream-v4", "google:4@1", "gpt-image-1-mini"],
         user_image_url="https://example.com/user.jpg",
         costume_reference_urls=[
             "https://example.com/costume1.jpg",
@@ -338,7 +339,7 @@ async def test_generate_try_on_parallel_success(
     model_names = [r.model_name for r in results]
     assert "seedream-v4" in model_names
     assert "google:4@1" in model_names
-    assert "qwen-image" in model_names
+    assert "gpt-image-1-mini" in model_names
 
     for result in results:
         assert result.status == "success"
@@ -406,16 +407,14 @@ async def test_generate_try_on_parallel_partial_failure(mock_client, test_costum
 @pytest.mark.asyncio
 async def test_image_to_data_url(test_images_dir):
     """Test image to data URL conversion."""
-    client = AIProviderClient("https://test.com")
-
     # Test JPEG
     jpeg_path = test_images_dir / "user1.jpeg"
-    data_url = client._image_to_data_url(str(jpeg_path))
+    data_url = image_to_data_url(str(jpeg_path))
     assert data_url.startswith("data:image/jpeg;base64,")
 
     # Test JPG (should be treated as jpeg)
     jpg_path = test_images_dir / "bowsette-crown.jpg"
-    data_url = client._image_to_data_url(str(jpg_path))
+    data_url = image_to_data_url(str(jpg_path))
     assert data_url.startswith("data:image/jpeg;base64,")
 
     # Verify base64 is valid

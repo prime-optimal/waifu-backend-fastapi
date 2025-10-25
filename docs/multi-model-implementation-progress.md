@@ -1,6 +1,6 @@
 # Multi-Model Try-On Implementation Progress
 
-**Last verified:** 2025-10-24
+**Last verified:** 2025-10-24 (Evening)
 **Current scope:** Client and tests complete; workflow/API integration pending. See [docs/features/multi-model-try-on.md](features/multi-model-try-on.md) for up-to-date behavior.
 
 ---
@@ -9,64 +9,76 @@
 
 | Phase            | Status        | Notes                                                                 |
 |------------------|---------------|-----------------------------------------------------------------------|
-| Phase 1          | 95% Done      | AI client + 14 tests complete; logging/error handling need refinement |
+| Phase 1          | 96% Done      | AI client + 12 tests complete; retry/backoff still outstanding        |
 | Phase 2          | Pending       | Configuration, fixtures, and workflow testing not yet started         |
-| Phase 3          | Pending       | Service/router integration and observability work outstanding         |
+| Phase 3          | Pending       | Service/router integration and persistence work outstanding           |
 
 ---
 
 ## Phase 1: Foundation (Task 1)
 
 ### What's Done ✅
-- `AIProviderClient` talks to NanoGPT, supports seedream-v4, google:4@1, qwen-image
+- `AIProviderClient` talks to NanoGPT, supports seedream-v4, google:4@1, qwen-image, gpt-image-1-mini
 - Optional parallel helper (`generate_try_on_parallel`) with semaphore control
 - Per-model read timeouts plus shared connect/write limits
+- **Structured logging via `get_logger("ai_provider")`** (Logfire-compatible output) ✨ *Completed 2025-10-24 evening*
 - Debug artifacts gated behind `AI_PROVIDER_DEBUG` and `AI_DEBUG_DIR`
 - External integration tests marked with `@pytest.mark.external` and redirected to `.artifacts/ai`
-- **12 unit tests** in `tests/clients/test_ai_provider.py` covering URLs, base64, parallel execution, errors
+- 12 unit tests in `tests/clients/test_ai_provider.py` covering URLs, base64, parallel execution, errors
+- **Comprehensive external test** (`test_real_ai_provider_all_user_images`) testing 3 users × 3 models ✨ *Added 2025-10-24 evening*
 - `.artifacts/` is gitignored (line 18)
+- **Total test suite: 23 tests**
 
 ### What's Still Open
-- Structured logging via `observability.get_logger` (still using standard `logging`)
-- Raising typed exceptions instead of always returning `status="failed"`
-- Skip logic (`--run-external`) for live tests (conftest hook references flag that isn't registered in pytest)
+- Retry/backoff strategy for transient provider failures
+- Optional: bubble unexpected exceptions instead of always returning `status="failed"`
 
 ---
 
 ## External API Verification (Manual)
 
 - Location: `tests/api/test_workflow_integration.py`
+- Test: `test_real_ai_provider_all_user_images` (3 users × 3 models with detailed statistics)
 - Invocation:
   ```bash
   AI_PROVIDER_API_KEY=... AI_PROVIDER_URL=... uv run pytest -m external -vv
   ```
 - Behavior: Tests skip when credentials or fixture images are missing. They remain manual/optional.
+- Models tested: seedream-v4, google:4@1, gpt-image-1-mini (qwen-image removed due to latency)
 
 ---
 
 ## Upcoming Work (Phase 1 Remainder)
 
-1. **Logging:** Replace direct `logging.getLogger` usage with `get_logger("ai_provider")` and emit structured fields.
-2. **Error Handling:** Bubble unexpected exceptions (ServiceError/ValueError) rather than always returning a failed result.
-3. **Docs Update:** Keep changelog and status docs aligned with actual capabilities.
+1. **Retries:** Decide on exponential backoff or limited retries for provider calls.
+2. **Error Escalation:** Clarify whether unexpected exceptions should surface to callers.
+3. **Documentation:** Keep changelog and feature docs aligned with current behavior.
 
 ---
 
-## Blockers / Risks
+## Phase 2 Preview
 
-- Logging not yet integrated with observability stack.
-- Live API tests still take several minutes and rely on manual credentials; they must remain opt-in.
-- No persistence layer for per-model results yet, so workflow integration cannot proceed.
+- Extend fixtures to cover B2 upload paths and new model variants.
+- Finalize Backblaze naming convention ([docs/storage/b2-object-naming.md](storage/b2-object-naming.md)) and ensure tests assert against it.
+- Wire pytest option `--run-external` to make opt-in behavior explicit.
+
+---
+
+## Phase 3 Preview
+
+- Implement workflow orchestration, persistence, and API gallery responses.
+- Upload per-model assets and debug logs to B2 under `workflows/{workflow_id}/...`.
+- Capture structured logs/metrics across the full stack.
 
 ---
 
 ## Next Milestones
 
 | Milestone | Target Outcome                                                    | Status         |
-|-----------|-------------------------------------------------------------------|--------------------|
-| M1        | Structured logging + refined error handling                       | Ready to start |
-| M2        | Database schema extension (ModelResult)                           | Blocked on M1  |
-| M3        | Try-on service + API endpoint wiring                              | Blocked on M2  |
-| M4        | Full test suite (service + API + storage)                         | Blocked on M3  |
+|-----------|-------------------------------------------------------------------|----------------|
+| M1        | Structured logging + documentation alignment                      | ✅ Complete     |
+| M2        | Database schema extension (ModelResult)                           | ⏳ Pending      |
+| M3        | Try-on service + API endpoint wiring                              | ⏳ Pending      |
+| M4        | Full test suite (service + API + storage)                         | ⏳ Pending      |
 
 Keep this document in sync as milestones close or new blockers surface.

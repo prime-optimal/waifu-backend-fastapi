@@ -21,7 +21,9 @@ class BaseServiceClient:
     ) -> None:
         self._base_url = base_url
         self._timeout = timeout
-        self._client = client or httpx.AsyncClient(base_url=base_url, timeout=timeout)
+        self._client = client or httpx.AsyncClient(
+            base_url=base_url, timeout=timeout, follow_redirects=True
+        )
 
     @property
     def client(self) -> httpx.AsyncClient:
