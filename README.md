@@ -14,12 +14,13 @@ This service powers the virtual try-on experience. It orchestrates user uploads,
   - [Key Features](#key-features)
   - [Environment Configuration](#environment-configuration)
   - [Testing](#testing)
-    - [Unit & Integration Tests (Mocked)](#unit--integration-tests-mocked)
+    - [Unit \& Integration Tests (Mocked)](#unit--integration-tests-mocked)
     - [External AI Tests (Live NanoGPT API)](#external-ai-tests-live-nanogpt-api)
   - [AI Provider Notes](#ai-provider-notes)
-  - [Debugging & Logs](#debugging--logs)
+  - [Debugging \& Logs](#debugging--logs)
   - [Roadmap](#roadmap)
   - [Reference Docs](#reference-docs)
+  - [Workflow Expectations](#workflow-expectations)
 
 ---
 
@@ -141,3 +142,13 @@ For detailed guidance, see [`docs/features/multi-model-try-on.md`](docs/features
 - [`docs/multi-model-implementation-plan.md`](docs/multi-model-implementation-plan.md)
 
 For planning guidelines, see `openspec/` instructions.
+
+## Workflow Expectations
+1. Receive task document → review test list.
+2. Stub tests/mocks as needed.
+3. Implement feature.
+4. Run unit/integration tests + lint.
+5. Submit changes to RepoPrompt MCP for architectural review.
+6. Address feedback, rerun tests.
+7. After approval, apply real credentials/endpoints.
+8. Complete `/docs/journal/<date>-<task>.md` entry following `JOURNAL.md`.
