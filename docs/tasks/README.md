@@ -4,23 +4,44 @@ This document explains how to pick up, implement, and close a task in the waifu-
 
 ---
 
+## Phase Catalogue
+
+| Phase    | Doc                                           | Depends On         | Notes                         |
+| -------- | --------------------------------------------- | ------------------ | ----------------------------- |
+| Phase 1A | `docs/tasks/phase1a-neon-bootstrap.md`        | None               | Ensure Neon DSN working       |
+| Phase 1B | `docs/tasks/phase1b-alembic-migration.md`     | Phase 1A           | Introduce Alembic             |
+| Phase 2  | `docs/tasks/phase2-workflow-orchestration.md` | Phase 1A, Phase 1B | Multi-model orchestration     |
+| Phase 3  | `docs/tasks/phase3-api-endpoints.md`          | Phase 2            | API contracts for multi-model |
+| Phase 4  | `docs/tasks/phase4-frontend-integration.md`   | Phase 3            | Frontend consumes new APIs    |
+| Phase 5  | `docs/tasks/phase5-cleanup-docs.md`           | Phase 1A, Phase 1B | Documentation hygiene         |
+
+## Dependency Matrix
+
+- Phase 1A → Phase 2, Phase 3
+- Phase 1B → Phase 2 (schema), Phase 5
+- Phase 2 → Phase 3, Phase 4
+- Phase 3 → Phase 4
+- Phase 5 → can start after 1A/1B
+
+---
+
 ## 1. Pick Up a Task
 
-a. Create or locate the GitHub issue (e.g., `PHASE1-3`).
+a. Create or locate the GitHub issue (e.g., `PHASE1A-3` or `PHASE1B-2`).
 b. Run the bootstrap script from the repo root:
 
 ```bash
-./scripts/new_task.sh PHASE1-3 database-schema
+./scripts/new_task.sh PHASE1A-3 database-schema
 ```
 
 c. `cd` into the new worktree:
 
 ```bash
-cd ../waifu-backend-fastapi-PHASE1-3-database-schema
+cd ../waifu-backend-fastapi-PHASE1A-3-database-schema
 ```
 
 d. Copy `.env` from your main worktree or create a fresh one (see `.env.example`).
-e. Open the phase-specific task doc (e.g., `docs/tasks/phase1-database-schema.md`) and review tests/requirements.
+e. Open the phase-specific task doc (e.g., `docs/tasks/phase1a-neon-bootstrap.md` or `docs/tasks/phase1b-alembic-migration.md`) and review tests/requirements.
 
 ---
 
@@ -32,7 +53,7 @@ e. Open the phase-specific task doc (e.g., `docs/tasks/phase1-database-schema.md
 - Run tests: `uv run pytest -k <marker>`
 - Commit early/often with messages that include the issue ID:
   ```
-  PHASE1-3 add ModelResult table and repo methods
+  PHASE1A-3 configure Neon DSN and verify connectivity
   ```
 
 ---
@@ -48,6 +69,7 @@ Before opening a PR you must request an architectural review via the RepoPrompt 
   (or whatever command exposes the MCP endpoint)
 
 - Paste the transcript link or summary into your PR description.
+- See `.github/pull_request_template.md` for the matching checklist.
 
 ---
 
@@ -55,16 +77,17 @@ Before opening a PR you must request an architectural review via the RepoPrompt 
 
 - Push your branch:
   ```
-  git push origin PHASE1-3-database-schema
+  git push origin PHASE1A-3-database-schema
   ```
 
 - Open a PR on GitHub. The template will prompt you for:
-  - Issue link (autolinked automatically via `PHASE1-3` in title)
+  - Issue link (autolinked automatically via `PHASE1A-3` in title)
   - Test checklist
   - Environment/secrets confirmation
   - RepoPrompt MCP review summary
   - Documentation updates
   - Journal entry location
+  - Include `Fixes #<issue>` (or similar) in the PR title or description. A GitHub Action enforces this.
 
 ---
 
@@ -76,8 +99,8 @@ Before opening a PR you must request an architectural review via the RepoPrompt 
 - Merge to `main`.
 - Delete branch locally and remotely:
   ```
-  git worktree remove ../waifu-backend-fastapi-PHASE1-3-database-schema
-  git push origin --delete PHASE1-3-database-schema
+  git worktree remove ../waifu-backend-fastapi-PHASE1A-3-database-schema
+  git push origin --delete PHASE1A-3-database-schema
   ```
 
 ---
@@ -96,7 +119,7 @@ Follow the format in `docs/JOURNAL.md`.
 
 ## Tips
 
-- Keep commits atomic; each commit message must contain the issue ID (`PHASE1-3`).
+- Keep commits atomic; each commit message must contain the issue ID (`PHASE1A-3`).
 - Never force-push to `main`; always use PRs.
 - If you need to switch tasks, simply `cd` back to the main worktree and spin up a new one—your in-progress worktree stays untouched.
 - Worktrees are disposable—feel free to delete them once the branch is merged.

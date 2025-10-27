@@ -6,21 +6,21 @@ This document explains how to pick up, implement, and close a task in the waifu-
 
 ## 1. Pick Up a Task
 
-a. Create or locate the GitHub issue (e.g., `PHASE1-3`).
+a. Create or locate the GitHub issue (e.g., `PHASE1A-3` or `PHASE1B-2`).
 b. Run the bootstrap script from the repo root:
 
 ```bash
-./scripts/new_task.sh PHASE1-3 database-schema
+./scripts/new_task.sh PHASE1A-3 database-schema
 ```
 
 c. `cd` into the new worktree:
 
 ```bash
-cd ../waifu-backend-fastapi-PHASE1-3-database-schema
+cd ../waifu-backend-fastapi-PHASE1A-3-database-schema
 ```
 
 d. Copy `.env` from your main worktree or create a fresh one (see `.env.example`).
-e. Open the phase-specific task doc (e.g., `docs/tasks/phase1-database-schema.md`) and review tests/requirements.
+e. Open the phase-specific task doc (e.g., `docs/tasks/phase1a-neon-bootstrap.md` or `docs/tasks/phase1b-alembic-migration.md`) and review tests/requirements.
 
 ---
 
@@ -32,7 +32,7 @@ e. Open the phase-specific task doc (e.g., `docs/tasks/phase1-database-schema.md
 - Run tests: `uv run pytest -k <marker>`
 - Commit early/often with messages that include the issue ID:
   ```
-  PHASE1-3 add ModelResult table and repo methods
+  PHASE1A-3 configure Neon DSN and verify connectivity
   ```
 
 ---
@@ -55,7 +55,7 @@ Before opening a PR you must request an architectural review via the RepoPrompt 
 
 - Push your branch:
   ```
-  git push origin PHASE1-3-database-schema
+  git push origin PHASE1A-3-database-schema
   ```
 
 - Open a PR on GitHub. The template will prompt you for:
@@ -65,6 +65,7 @@ Before opening a PR you must request an architectural review via the RepoPrompt 
   - RepoPrompt MCP review summary
   - Documentation updates
   - Journal entry location
+  - Include `Fixes #<issue>` (or similar) in the PR title or description. A GitHub Action enforces this.
 
 ---
 
@@ -76,8 +77,8 @@ Before opening a PR you must request an architectural review via the RepoPrompt 
 - Merge to `main`.
 - Delete branch locally and remotely:
   ```
-  git worktree remove ../waifu-backend-fastapi-PHASE1-3-database-schema
-  git push origin --delete PHASE1-3-database-schema
+  git worktree remove ../waifu-backend-fastapi-PHASE1A-3-database-schema
+  git push origin --delete PHASE1A-3-database-schema
   ```
 
 ---

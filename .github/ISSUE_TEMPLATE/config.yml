@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Task Workflow Reference
+    url: https://github.com/prime-optimal/waifu-backend-fastapi/blob/main/docs/tasks/README.md
+    about: Review the branch/worktree + RepoPrompt MCP process before opening new issues.

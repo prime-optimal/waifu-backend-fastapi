@@ -1,10 +1,13 @@
 # Summary
 
 > Link the phase task document, describe the scope of this PR, and note any deviations from the task plan.
+> **Important**: Please include `Fixes #<issue>` in the summary so issues can get auto-closed.
+> Include the issue directly in PR titles, descriptions, and commits using `Fixes #3`, `Closes #3`, or simply `#3`.  
 
-- Phase: <!-- e.g., [Phase 2 – Workflow Orchestration](../docs/tasks/phase2-workflow-orchestration.md) -->
+- Phase: <!-- e.g., [Phase 1A – Neon Bootstrap](../docs/tasks/phase1a-neon-bootstrap.md) or [Phase 1B – Alembic Migration](../docs/tasks/phase1b-alembic-migration.md) -->
 - Worktree & branch: `git worktree add … && git checkout …`
 - RepoPrompt MCP review summary: <!-- paste link/transcript -->
+
 
 ---
 

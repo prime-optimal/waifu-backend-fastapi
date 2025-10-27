@@ -1,0 +1,12 @@
+- uses: actions/github-script@v7
+  with:
+    script: |
+      const title = context.payload.pull_request.title ?? '';
+      const body = context.payload.pull_request.body ?? '';
+      const issueRef = /#\d+/;
+
+      if (!issueRef.test(title) && !issueRef.test(body)) {
+        core.setFailed(
+          'Please mention an issue number (e.g., "Fixes #12") in the PR title or description.'
+        );
+      }
