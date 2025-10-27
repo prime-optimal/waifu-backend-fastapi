@@ -36,8 +36,18 @@
 ### Test Results
 ```
 ✅ Database Connection: SUCCESS
-✅ Costume Repository Tests: 1/1 PASSED (tests/db/test_costume_repository.py)
-✅ API Health Tests: 2/2 PASSED (tests/api/test_main_app.py)
+   Command: uv run python scripts/verify_db_connection.py
+   Output: "Database connection successful!"
+
+✅ Costume Repository Tests: 1/1 PASSED
+   Command: uv run pytest tests/db/test_costume_repository.py
+   Output: "1 passed, 8 warnings"
+
+✅ API Health Tests: 2/2 PASSED (alternative to missing test_healthz_db)
+   Command: uv run pytest tests/api/test_main_app.py
+   Output: "2 passed, 15 warnings"
+   Note: test_healthz_db doesn't exist, but existing health tests work
+
 ✅ Code Quality: Main codebase lint-clean
 ```
 
