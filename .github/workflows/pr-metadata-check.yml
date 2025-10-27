@@ -1,0 +1,13 @@
+- uses: actions/github-script@v7
+      with:
+        script: |
+          const title = context.payload.pull_request.title ?? '';
+          const body = context.payload.pull_request.body ?? '';
+          const issueRef = /(?:Fixes|Closes|Resolves)?\s*#\d+/i;
+          const phaseRef = /PHASE[0-9A-Z]*-\d+/i;
+
+          if (!issueRef.test(title + '\n' + body) && !phaseRef.test(title + '\n' + body)) {
+            core.setFailed(
+              'PR must cite a GitHub issue (e.g., "Fixes #3") or phase ID (e.g., "PHASE1A-3"). Update the title or description.'
+            );
+          }
