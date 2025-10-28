@@ -1,0 +1,30 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "mcp": {
+        "RepoPrompt": {
+            "type": "local",
+            "command": [
+                "/Users/ryan/RepoPrompt/repoprompt_cli"
+            ],
+            "enabled": true
+        }
+    },
+    "provider": {
+        "nanogpt": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Nano GPT",
+            "options": {
+                "baseURL": "https://nano-gpt.com/api/v1/",
+                "apiKey": "{env:NANO_GPT_API_KEY}"
+            },
+            "models": {
+                "claude-sonnet-4-5-20250929": {
+                    "name": "Claude 4.5 Sonnet (NanoGPT)"
+                },
+                "claude-haiku-4-5-20251001": {
+                    "name": "Claude 4.5 Haiku (NanoGPT)"
+                }
+            }
+        }
+    }
+}

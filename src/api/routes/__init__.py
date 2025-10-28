@@ -1,5 +1,5 @@
 """API routers."""
 
-from . import catalog, workflows
+from . import analytics, catalog, users, workflows
 
-__all__ = ["catalog", "workflows"]
+__all__ = ["analytics", "catalog", "users", "workflows"]

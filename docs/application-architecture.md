@@ -51,6 +51,156 @@ async def root():
 - Only one route is defined directly in `main.py` (the root endpoint)
 - All other routes are loaded inside the factory
 
+
+### 1.5 Docker Deployment
+This needs to be enshrined, frozen, hung up on the wall or whatever:
+```
+{
+  "$schema": "https://schema.railpack.com",
+  "caches": {
+    "uv": {
+      "directory": "/opt/uv-cache",
+      "type": "shared"
+    }
+  },
+  "deploy": {
+    "base": {
+      "image": "ghcr.io/railwayapp/railpack-runtime:latest"
+    },
+    "inputs": [
+      {
+        "include": [
+          "/mise/shims",
+          "/mise/installs",
+          "/usr/local/bin/mise",
+          "/etc/mise/config.toml",
+          "/root/.local/state/mise",
+          ".tool-versions"
+        ],
+        "step": "packages:mise"
+      },
+      {
+        "include": [
+          "/app/.venv"
+        ],
+        "step": "build"
+      }
+    ],
+    "startCommand": "hypercorn main:app --bind [::]:8080",
+    "variables": {
+      "PIP_DEFAULT_TIMEOUT": "100",
+      "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "PYTHONFAULTHANDLER": "1",
+      "PYTHONHASHSEED": "random",
+      "PYTHONUNBUFFERED": "1"
+    }
+  },
+  "steps": {
+    "packages:mise": {
+      "assets": {
+        "mise.toml": "[tools]\n  [tools.python]\n    version = \"3.13.9\"\n  [tools.uv]\n    version = \"0.9.5\"\n"
+      },
+      "commands": [
+        {
+          "path": "/mise/shims"
+        },
+        {
+          "dest": ".tool-versions",
+          "src": ".tool-versions"
+        },
+        {
+          "customName": "create mise config",
+          "name": "mise.toml",
+          "path": "/etc/mise/config.toml"
+        },
+        {
+          "cmd": "sh -c 'mise trust -a && mise install'",
+          "customName": "install mise packages: python, uv"
+        }
+      ],
+      "inputs": [
+        {
+          "image": "ghcr.io/railwayapp/railpack-builder:latest"
+        }
+      ],
+      "variables": {
+        "MISE_CACHE_DIR": "/mise/cache",
+        "MISE_CONFIG_DIR": "/mise",
+        "MISE_DATA_DIR": "/mise",
+        "MISE_INSTALLS_DIR": "/mise/installs",
+        "MISE_NODE_VERIFY": "false",
+        "MISE_SHIMS_DIR": "/mise/shims"
+      }
+    },
+    "install": {
+      "caches": [
+        "uv"
+      ],
+      "commands": [
+        {
+          "dest": "pyproject.toml",
+          "src": "pyproject.toml"
+        },
+        {
+          "dest": "uv.lock",
+          "src": "uv.lock"
+        },
+        {
+          "path": "/root/.local/bin"
+        },
+        {
+          "path": "/app/.venv/bin"
+        },
+        {
+          "cmd": "uv sync --locked --no-dev --no-install-project"
+        }
+      ],
+      "inputs": [
+        {
+          "step": "packages:mise"
+        }
+      ],
+      "variables": {
+        "PIP_DEFAULT_TIMEOUT": "100",
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONFAULTHANDLER": "1",
+        "PYTHONHASHSEED": "random",
+        "PYTHONUNBUFFERED": "1",
+        "UV_CACHE_DIR": "/opt/uv-cache",
+        "UV_COMPILE_BYTECODE": "1",
+        "UV_LINK_MODE": "copy",
+        "UV_PYTHON_DOWNLOADS": "never",
+        "VIRTUAL_ENV": "/app/.venv"
+      }
+    },
+    "build": {
+      "commands": [
+        {
+          "cmd": "uv sync --locked --no-dev --no-editable"
+        }
+      ],
+      "inputs": [
+        {
+          "step": "install"
+        },
+        {
+          "include": [
+            "src/",
+            "main.py",
+            "pyproject.toml",
+            "uv.lock"
+          ],
+          "local": true
+        }
+      ]
+    }
+  }
+}
+```
+
+
 ### 2. Application Factory: `src/app/factory.py`
 
 ```python

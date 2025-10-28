@@ -66,6 +66,9 @@ class AppSettings(BaseSettings):
 
     workflow_tmp_prefix: str = Field(default="tmp")
     workflow_log_prefix: str = Field(default="logs")
+    asset_cleanup_days: int = Field(default=30)
+    analytics_enabled: bool = Field(default=True)
+    user_session_timeout_hours: int = Field(default=24)
 
     environment: Literal["local", "staging", "production"] = Field(default="local")
 

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 
 from ..app.settings import AppSettings
 from ..db.database import Database
-from ..db.repositories import CostumeRepository
+from ..db.repositories import AnalyticsRepository, CostumeRepository
 from ..db.repositories.costumes import CostumeRecord
 
 logger = logging.getLogger("waifu.catalog")
@@ -37,15 +37,19 @@ class CatalogService:
         database: Database,
         repository: CostumeRepository | None = None,
         data_source: CatalogDataSource | None = None,
+        analytics_repository: AnalyticsRepository | None = None,
     ) -> None:
         self._settings = settings
         self._database = database
         self._repository = repository or CostumeRepository()
         self._data_source = data_source or CatalogDataSource()
+        self._analytics_repository = analytics_repository or AnalyticsRepository()
         self.cron_kwargs = self._parse_cron_expression(settings.catalog_refresh_cron)
 
     @classmethod
-    def from_settings(cls, settings: AppSettings, database: Database) -> "CatalogService":
+    def from_settings(
+        cls, settings: AppSettings, database: Database
+    ) -> "CatalogService":
         return cls(settings=settings, database=database)
 
     async def manual_refresh(self, database: Database | None = None) -> int:
@@ -54,7 +58,9 @@ class CatalogService:
         async with db.session() as session:
             await self._repository.upsert_costumes(session, self._to_records(items))
             await session.commit()
-        logger.info("catalog.refresh.completed", extra={"extra_data": {"count": len(items)}})
+        logger.info(
+            "catalog.refresh.completed", extra={"extra_data": {"count": len(items)}}
+        )
         return len(items)
 
     async def scheduled_refresh(self) -> None:

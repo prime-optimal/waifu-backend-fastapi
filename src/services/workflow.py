@@ -13,7 +13,12 @@ from ..clients import BackgroundRemoverClient, GoogleGenerationClient, SeedreamC
 from ..clients.background_remover import BackgroundRemovalResult
 from ..clients.seedream import SeedreamResult
 from ..db.database import Database
-from ..db.repositories import CostumeRepository, WorkflowRepository
+from ..db.repositories import (
+    AssetRepository,
+    AnalyticsRepository,
+    CostumeRepository,
+    WorkflowRepository,
+)
 from ..storage import B2Storage
 
 
@@ -36,6 +41,8 @@ class WorkflowService:
         google_client: GoogleGenerationClient,
         costume_repository: CostumeRepository | None = None,
         workflow_repository: WorkflowRepository | None = None,
+        asset_repository: AssetRepository | None = None,
+        analytics_repository: AnalyticsRepository | None = None,
     ) -> None:
         self._settings = settings
         self._database = database
@@ -45,9 +52,13 @@ class WorkflowService:
         self._google_client = google_client
         self._costume_repository = costume_repository or CostumeRepository()
         self._workflow_repository = workflow_repository or WorkflowRepository()
+        self._asset_repository = asset_repository or AssetRepository()
+        self._analytics_repository = analytics_repository or AnalyticsRepository()
 
     @classmethod
-    def from_settings(cls, settings: AppSettings, database: Database) -> "WorkflowService":
+    def from_settings(
+        cls, settings: AppSettings, database: Database
+    ) -> "WorkflowService":
         storage = B2Storage(
             key_id=settings.b2_key_id,
             application_key=settings.b2_application_key,
@@ -55,7 +66,9 @@ class WorkflowService:
             download_url=str(settings.b2_download_url),
             api_url=str(settings.b2_api_url),
         )
-        background_client = BackgroundRemoverClient(str(settings.background_remover_url))
+        background_client = BackgroundRemoverClient(
+            str(settings.background_remover_url)
+        )
         seedream_client = SeedreamClient(str(settings.seedream_url))
         google_client = GoogleGenerationClient(str(settings.google_generation_url))
         return cls(
@@ -87,7 +100,9 @@ class WorkflowService:
         async with db.session() as session:
             costume = await self._costume_repository.get(session, payload.costume_id)
             if costume is None:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Costume not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="Costume not found"
+                )
 
             run = await self._workflow_repository.create_run(
                 session,
@@ -141,16 +156,24 @@ class WorkflowService:
                 await session.commit()
                 raise
 
-    async def get_workflow(self, database: Database | None, workflow_id: uuid.UUID) -> WorkflowState | None:
+    async def get_workflow(
+        self, database: Database | None, workflow_id: uuid.UUID
+    ) -> WorkflowState | None:
         db = database or self._database
         async with db.session() as session:
             record = await self._workflow_repository.get(session, workflow_id)
-            if record is None or record.final_asset_url is None or record.log_object_path is None:
+            if (
+                record is None
+                or record.final_asset_url is None
+                or record.log_object_path is None
+            ):
                 return None
             details = record.detail or {}
             log_url = details.get("log_url")
             if log_url is None:
-                log_url = f"{self._settings.b2_download_url}/file/{record.log_object_path}"
+                log_url = (
+                    f"{self._settings.b2_download_url}/file/{record.log_object_path}"
+                )
             return WorkflowState(
                 workflow_id=record.id,
                 final_asset_url=record.final_asset_url,
