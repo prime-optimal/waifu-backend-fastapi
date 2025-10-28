@@ -1,0 +1,90 @@
+%% Legend: ✅ existing │ ✳️ planned
+erDiagram
+    USERS {
+        UUID id PK
+        UUID session_id "UNIQUE"
+        DateTime created_at
+        DateTime last_active
+        JSON preferences
+        JSON user_metadata
+    }
+    COSTUMES {
+        UUID id PK
+        string name
+        text prompt
+        text reference_image_url
+        text affiliate_link
+        boolean is_active
+        DateTime updated_at
+    }
+    WORKFLOW_RUNS {
+        UUID id PK
+        UUID user_session
+        UUID user_id FK
+        UUID costume_id FK
+        WorkflowStatus status
+        text uploaded_asset_url
+        text background_asset_url
+        text seedream_asset_url
+        text final_asset_url
+        text log_object_path
+        JSON detail
+        DateTime created_at
+        DateTime updated_at
+    }
+    ASSETS {
+        UUID id PK
+        UUID workflow_run_id FK
+        AssetType asset_type
+        text storage_path
+        text public_url
+        BigInteger file_size
+        string mime_type
+        DateTime created_at
+    }
+    WORKFLOW_PREFERENCES {
+        UUID id PK
+        UUID workflow_id FK
+        text selection_url
+        DateTime created_at
+    }
+    PROCESSING_METRICS {
+        UUID id PK
+        UUID workflow_run_id FK
+        string step
+        DateTime started_at
+        DateTime completed_at
+        BigInteger duration_ms
+        boolean success
+        text error_message
+        int retry_count
+    }
+    COSTUME_POPULARITY {
+        UUID id PK
+        UUID costume_id FK
+        Date date
+        int attempt_count
+        int success_count
+        float average_processing_time
+    }
+    %% ✳️ Planned table for multi-model output persistence
+    MODEL_RESULTS {
+        UUID id PK
+        UUID workflow_run_id FK
+        string model_name
+        WorkflowStatus status
+        text asset_url
+        text error_message
+        int processing_time_ms
+        DateTime created_at
+    }
+
+    USERS ||--o{ WORKFLOW_RUNS : "has many"
+    COSTUMES ||--o{ WORKFLOW_RUNS : "used by"
+    WORKFLOW_RUNS ||--o{ ASSETS : "produces"
+    WORKFLOW_RUNS ||--o{ WORKFLOW_PREFERENCES : "captures"
+    WORKFLOW_RUNS ||--o{ PROCESSING_METRICS : "logs"
+    COSTUMES ||--o{ COSTUME_POPULARITY : "tracked by"
+    WORKFLOW_RUNS ||--o{ MODEL_RESULTS : "✳️ planned multi-model"
+
+    %% MODEL_RESULTS reflects the planned table for multi-model output persistence.

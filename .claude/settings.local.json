@@ -1,0 +1,11 @@
+{
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "RepoPrompt"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest:*)"
+    ]
+  }
+}

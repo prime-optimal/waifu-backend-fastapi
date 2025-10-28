@@ -1,0 +1,66 @@
+name: Alembic Drift Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'alembic/**'
+      - 'docs/**'
+      - 'scripts/**'
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.13"
+
+      - name: Install uv (project policy) and sync deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install uv
+          uv sync --locked || uv sync
+
+      - name: Ensure PYTHONPATH
+        run: echo "PYTHONPATH=." >> $GITHUB_ENV
+
+      - name: Run migrations (apply existing)
+        env:
+          ALEMBIC_DATABASE_URL: sqlite+aiosqlite:///./ci_migration_check.db
+        run: |
+          uv run alembic upgrade head
+
+      - name: Autogenerate draft to detect drift
+        env:
+          ALEMBIC_DATABASE_URL: sqlite+aiosqlite:///./ci_migration_check.db
+        run: |
+          # Create a temporary revision id so files are easy to find
+          REV_ID="ci_drift_check_$(date +%s)"
+          uv run alembic revision --autogenerate -m "ci-drift-check" --rev-id "$REV_ID" || true
+          # Look for any generated files matching the rev id
+          GEN=$(ls alembic/versions 2>/dev/null | grep "$REV_ID" || true)
+          if [ -n "$GEN" ]; then
+            echo "Autogenerate produced a new migration(s):"
+            ls -la alembic/versions | grep "$REV_ID" || true
+            echo "This indicates schema drift between models and migrations. Please generate and commit migrations."
+            # Fail the job to surface drift
+            exit 1
+          else
+            echo "No autogenerate output — migrations are up-to-date."
+          fi
+
+      - name: Cleanup generated draft (if present)
+        if: failure() == false
+        run: |
+          # Remove any ci artifact revisions (defensive)
+          ls alembic/versions 2>/dev/null | grep ci_drift_check || true

@@ -1,0 +1,89 @@
+classDiagram
+    class UploadResponse {
+        +UUID session_id
+        +str asset_url
+    }
+    class WorkflowRequest {
+        +UUID session_id
+        +UUID costume_id
+        +str uploaded_asset_url
+    }
+    class WorkflowResponse {
+        +UUID workflow_id
+        +str final_asset_url
+        +str log_url
+    }
+    class PreferenceRequest {
+        +str selection_url
+    }
+    class PreferenceResponse {
+        +UUID workflow_id
+        +str selection_url
+    }
+    class SessionRequest {
+        +UUID session_id
+    }
+    class SessionResponse {
+        +UUID user_id
+        +UUID session_id
+    }
+    class UserPreferences {
+        +dict preferences
+    }
+    class UserResponse {
+        +UUID id
+        +UUID session_id
+        +dict? preferences
+        +dict? user_metadata
+    }
+    class ProcessingMetricResponse {
+        +str step
+        +datetime started_at
+        +datetime? completed_at
+        +int? duration_ms
+        +bool success
+        +str? error_message
+        +int retry_count
+    }
+    class WorkflowMetricsResponse {
+        +UUID workflow_id
+        +list[ProcessingMetricResponse] metrics
+    }
+    class CostumePopularityResponse {
+        +date date
+        +int attempt_count
+        +int success_count
+        +float? average_processing_time
+    }
+    class CostumeStatsResponse {
+        +UUID costume_id
+        +list[CostumePopularityResponse] stats
+    }
+    class CatalogSyncResponse {
+        +bool accepted
+    }
+    class WorkflowDetailResponse {
+        +UUID workflow_id
+        +str status
+        +str? final_asset_url
+        +str? log_url
+        +datetime created_at
+        +datetime updated_at
+        +list[AssetResponse] assets
+        +list[PreferenceResponse] preferences
+        +WorkflowMetricsResponse? metrics
+    }
+    class AssetResponse {
+        +str asset_type
+        +str url
+        +int? file_size
+        +datetime created_at
+    }
+
+    WorkflowMetricsResponse "1" *-- "many" ProcessingMetricResponse
+    CostumeStatsResponse "1" *-- "many" CostumePopularityResponse
+    WorkflowDetailResponse "1" *-- "many" AssetResponse
+    WorkflowDetailResponse "1" *-- "many" PreferenceResponse
+    WorkflowDetailResponse --> WorkflowMetricsResponse : aggregates
+
+    %% WorkflowDetailResponse and AssetResponse represent planned API models for richer UI payloads.
