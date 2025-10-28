@@ -1,45 +1,56 @@
-# Phase 1B — Alembic Migration for Model Results
+# Phase 1B – Alembic Migration Scaffolding
 
-## Dependency
-- **Requires:** Phase 1A (DB connectivity established).
-- Should land before Phase 2 commits that rely on the `model_results` table.
+## Goal
+Establish Alembic tooling and create a baseline migration that mirrors the current SQLAlchemy models so future schema changes are version-controlled and reproducible across SQLite, Neon, and Railway.
 
-## Required .env Variables
-- `DATABASE_URL` (point at Neon or the restored local Postgres used in Phase 1A)
-- `ALEMBIC_DATABASE_URL` (optional, defaults to `DATABASE_URL`)
-- `PYTHONPATH=.`
+---
 
-## Tasks
-1. **Introduce Alembic Skeleton**
-   - Add `alembic.ini` & `migrations/` directory if missing.
-   - Configure `env.py` to read `ALEMBIC_DATABASE_URL` or fallback to `DATABASE_URL`.
+> **Step 0 – Create isolated worktree**
+> `uv run scripts/new_task.sh 1b alembic-baseline`
+> (Do this **before** editing any files.)
 
-2. **Add ModelResult Table**
-   - Create new revision: `uv run alembic revision -m "add model_results table"`.
-   - In migration script, create table with columns: `id`, `workflow_run_id` (FK), `model_name`, `status`, `asset_url`, `error_message`, `processing_time_ms`, `created_at`.
-   - Include downward migration to drop the table.
+---
 
-3. **Wire Into Application**
-   - Update `src/db/models.py` if combining with migration work (or ensure existing definitions match the migration).
-   - Confirm `Database.create_all()` won’t conflict (we’ll eventually lean on Alembic).
+## Context
+- Phase 1A completed Neon bootstrap and refreshed `.env.example`, docs, and PR template.
+- No Alembic history exists; the app still uses `Database.create_all()` at startup.
+- ORM models in `src/db/models.py` already include future tables (`processing_metrics`, `costume_popularity`, `workflow_preferences`, `model_results` placeholder).
 
-4. **Run Migrations**
-   - Apply: `uv run alembic upgrade head` against Neon/local DB.
-   - Verify new table exists via `psql` or `uv run python scripts/verify_db_connection.py --check model_results`.
-
-5. **Document Migration Process**
-   - Update `README`/`docs/tasks/README` with instructions for running Alembic.
-
-## Tests to Mock / Execute
-- `uv run pytest tests/db/test_models.py -k model_results` (add/adjust coverage).
-- `uv run pytest tests/db/test_workflow_repository.py -k model_result` once repository methods exist.
-- `uv run pytest tests/api/test_main_app.py::test_healthz_db` (ensures DB still reachable after migration).
-- Optional lint: `uv run ruff check migrations`.
+---
 
 ## Deliverables
-- RepoPrompt MCP review summary attached to PR.
-- PR references `PHASE1B-<issue>` in title/description.
-- Updated docs + `.env.example` if new variables introduced.
-- Journal entry `/docs/journal/YYYY-MM-DD-phase1b-alembic-migration.md`.
 
-> Task completes only after repo tests, Alembic migration, and architectural approval are in place.
+1. Alembic config directory (`alembic.ini`, `env.py`, `versions/`) committed to the repo.
+2. Baseline revision that produces **zero diff** when running `alembic revision --autogenerate` against an empty DB that matches the current ORM.
+3. Developer docs covering:
+   - Local SQLite migration workflow (`uv run alembic upgrade head`)
+   - Neon/Postgres workflow (branch DB, connection string in `.env`)
+   - How to create new migrations (`alembic revision --autogenerate -m "message"`)
+   - CI / commit-hook considerations for drift detection
+4. Optional helper script or `uv` task alias for common commands.
+
+---
+
+## Acceptance Criteria
+
+- [ ] Step 0 completed (worktree + branch created via `scripts/new_task.sh`)
+- [ ] `uv run alembic upgrade head` succeeds on fresh SQLite DB
+- [ ] Same command succeeds on Neon branch DB (credentials in `.env`)
+- [ ] `alembic history` shows exactly one baseline revision
+- [ ] Running `alembic revision --autogenerate` against the migrated DB produces **no changes**
+- [ ] Docs updated (`docs/tasks/phase1b-alembic-migration.md` and any cross-links)
+- [ ] PR opened with RepoPrompt MCP review link in body (template checkbox)
+
+---
+
+## Implementation Notes
+
+- Protect production data: default Alembic env should target local DB unless `DATABASE_URL` points elsewhere.
+- Keep secrets out of VCS; use `.env.example` template only.
+- Preserve existing diagrams under `docs/diagrams/`; update only if table names diverge.
+- Coordinate with Phase 1C planning so the migration chain is ready for multi-model tables.
+
+---
+
+## Next Phase
+Phase 1C will sync the current dataset (local Postgres) to Railway and introduce the `model_results` table for multi-model orchestration.
