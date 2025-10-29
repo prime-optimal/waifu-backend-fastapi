@@ -11,6 +11,7 @@ from fastapi import HTTPException, UploadFile, status
 
 from ..app.settings import AppSettings
 from ..clients import BackgroundRemoverClient, GoogleGenerationClient, SeedreamClient
+from ..observability.logger import get_logger
 from ..clients.background_remover import BackgroundRemovalResult
 from ..clients.seedream import SeedreamResult
 from ..db.database import Database
@@ -21,6 +22,8 @@ from ..db.repositories import (
     WorkflowRepository,
 )
 from ..storage import B2Storage
+
+logger = get_logger("waifu.app.workflow")
 
 
 @dataclass(slots=True)
@@ -130,6 +133,7 @@ class WorkflowService:
                 )
 
                 first_success_url: str | None = None
+                first_model: str | None = None
 
                 done, _pending = await asyncio.wait(
                     {seedream_task, google_task}, return_when=asyncio.FIRST_COMPLETED
@@ -141,9 +145,21 @@ class WorkflowService:
                         # Both client results have 'asset_url'
                         if res and getattr(res, "asset_url", None):
                             first_success_url = res.asset_url
+                            # Determine which model completed first by comparing task identity
+                            first_model = "google" if t == google_task else "seedream"
+                            logger.info(
+                                "First model completed",
+                                extra={
+                                    "first_model": first_model,
+                                    "workflow_id": str(run.id),
+                                }
+                            )
                             break
-                    except Exception:
-                        # Ignore here; handled in gather below
+                    except Exception as e:
+                        # Log for observability while still allowing gather to handle both results
+                        logger.debug(
+                            f"First-completed task raised exception: {type(e).__name__}: {e}"
+                        )
                         pass
 
                 # Await both results to collect outcomes and build logs
@@ -166,15 +182,18 @@ class WorkflowService:
                 )
 
                 # Choose final asset URL:
-                # - Prefer Google when both succeeded (deterministic for tests)
-                # - Otherwise prefer the first successful result if present
-                # - Otherwise pick whichever succeeded
-                if google_asset_url and seedream_asset_url:
-                    final_asset_url = google_asset_url
-                elif first_success_url:
+                # ALWAYS prefer first completion for optimal latency
+                # - Prioritize first successful completion when available
+                # - Edge case: both succeeded but first_success_url wasn't captured (unlikely)
+                # - Final fallback: pick whichever succeeded
+                if first_success_url:
                     final_asset_url = first_success_url
+                elif google_asset_url and seedream_asset_url:
+                    # Edge case: both succeeded but first_success_url wasn't captured
+                    # Fallback to Google for test determinism (tests expect Google when both succeed)
+                    final_asset_url = google_asset_url
                 else:
-                    final_asset_url = google_asset_url or seedream_asset_url  # one of them is not None here
+                    final_asset_url = google_asset_url or seedream_asset_url
 
                 # Build log payload tolerating missing model results
                 log_payload = self._build_log_payload(

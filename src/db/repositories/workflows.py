@@ -43,7 +43,7 @@ class WorkflowRepository:
         workflow_id: uuid.UUID,
         *,
         background_asset_url: str,
-        seedream_asset_url: str,
+        seedream_asset_url: str | None,
         final_asset_url: str,
         log_object_path: str,
         detail: dict[str, Any] | None = None,
