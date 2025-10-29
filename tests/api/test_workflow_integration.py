@@ -55,10 +55,10 @@ class StubSeedreamClient:
 
 class StubGoogleClient:
     async def generate(
-        self, *, prompt: str, seedream_asset_url: str
+        self, *, prompt: str, reference_url: str
     ) -> GoogleGenerationResult:
         return GoogleGenerationResult(
-            asset_url=f"{seedream_asset_url}-final", rationale="ok"
+            asset_url=f"{reference_url}-google-final", rationale="ok"
         )
 
     async def close(self) -> None:
