@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -115,36 +116,91 @@ class WorkflowService:
                 background = await self._background_client.remove_background(
                     image_url=payload.uploaded_asset_url
                 )
-                seedream_result = await self._seedream_client.generate(
-                    prompt=costume.prompt, reference_url=background.asset_url
+
+                # Create tasks for both models using the same prompt and background-cleaned reference URL
+                seedream_task = asyncio.create_task(
+                    self._seedream_client.generate(
+                        prompt=costume.prompt, reference_url=background.asset_url
+                    )
                 )
-                google_result = await self._google_client.generate(
-                    prompt=seedream_result.prompt,
-                    seedream_asset_url=seedream_result.asset_url,
+                google_task = asyncio.create_task(
+                    self._google_client.generate(
+                        prompt=costume.prompt, reference_url=background.asset_url
+                    )
                 )
+
+                first_success_url: str | None = None
+
+                done, _pending = await asyncio.wait(
+                    {seedream_task, google_task}, return_when=asyncio.FIRST_COMPLETED
+                )
+                # Capture first successful completion (if any)
+                for t in done:
+                    try:
+                        res = await t
+                        # Both client results have 'asset_url'
+                        if res and getattr(res, "asset_url", None):
+                            first_success_url = res.asset_url
+                            break
+                    except Exception:
+                        # Ignore here; handled in gather below
+                        pass
+
+                # Await both results to collect outcomes and build logs
+                results = await asyncio.gather(seedream_task, google_task, return_exceptions=True)
+                seedream_res = results[0]
+                google_res = results[1]
+
+                seedream_ok = not isinstance(seedream_res, Exception)
+                google_ok = not isinstance(google_res, Exception)
+
+                # If both failed, bubble up as HTTP 502 (outer except will mark failed)
+                if not seedream_ok and not google_ok:
+                    raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Model generation failed")
+
+                seedream_asset_url: str | None = (
+                    seedream_res.asset_url if seedream_ok else None
+                )
+                google_asset_url: str | None = (
+                    google_res.asset_url if google_ok else None
+                )
+
+                # Choose final asset URL:
+                # - Prefer Google when both succeeded (deterministic for tests)
+                # - Otherwise prefer the first successful result if present
+                # - Otherwise pick whichever succeeded
+                if google_asset_url and seedream_asset_url:
+                    final_asset_url = google_asset_url
+                elif first_success_url:
+                    final_asset_url = first_success_url
+                else:
+                    final_asset_url = google_asset_url or seedream_asset_url  # one of them is not None here
+
+                # Build log payload tolerating missing model results
                 log_payload = self._build_log_payload(
                     run.id,
                     payload.uploaded_asset_url,
                     background,
-                    seedream_result,
-                    google_result,
+                    seedream_res if seedream_ok else None,
+                    google_res if google_ok else None,
                 )
                 log_path = self._log_path(run.id)
                 log_url = await self._storage.upload_json(log_path, log_payload)
 
+                # Persist completion; allow seedream_asset_url to be None when it failed
                 await self._workflow_repository.mark_completed(
                     session,
                     run.id,
                     background_asset_url=background.asset_url,
-                    seedream_asset_url=seedream_result.asset_url,
-                    final_asset_url=google_result.asset_url,
+                    seedream_asset_url=seedream_asset_url,
+                    final_asset_url=final_asset_url,
                     log_object_path=log_path,
                     detail={"log_url": log_url},
                 )
                 await session.commit()
                 return WorkflowState(
                     workflow_id=run.id,
-                    final_asset_url=google_result.asset_url,
+                    final_asset_url=final_asset_url,
                     log_url=log_url,
                 )
             except Exception as exc:  # pragma: no cover - defensive
@@ -198,13 +254,13 @@ class WorkflowService:
         workflow_id: uuid.UUID,
         uploaded_asset_url: str,
         background: BackgroundRemovalResult,
-        seedream_result: SeedreamResult,
+        seedream_result: SeedreamResult | None,
         google_result,
     ) -> dict[str, Any]:
         return {
             "workflow_id": str(workflow_id),
             "uploaded_asset_url": uploaded_asset_url,
             "background_asset_url": background.asset_url,
-            "seedream_asset_url": seedream_result.asset_url,
-            "google_asset_url": google_result.asset_url,
+            "seedream_asset_url": (seedream_result.asset_url if seedream_result else None),
+            "google_asset_url": (google_result.asset_url if google_result else None) if google_result else None,
         }
